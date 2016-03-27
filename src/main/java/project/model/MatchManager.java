@@ -12,7 +12,12 @@ public class MatchManager {
 	private StringList chatEntries;
 	private int id, whitePoints, blackPoints, addedTime, pointsToWin;
 	private boolean humanMatch, isOngoing;
-	private final String[] players;
+	private String[] players;
+	
+	public MatchManager()
+	{
+		
+	}
 	
 	private MatchManager(String playerWhite, String playerBlack, int id)
 	{
