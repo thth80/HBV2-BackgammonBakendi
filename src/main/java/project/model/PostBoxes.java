@@ -45,7 +45,17 @@ public class PostBoxes {
 		
 		public HashMap<String, String>[] readAllMessages()
 		{
-			return (HashMap<String, String>[]) messages.toArray();
+			return convertToArray(messages);
+		}
+		
+		private HashMap<String, String>[] convertToArray(ArrayList<HashMap<String, String>> toConvert)
+		{
+			HashMap<String, String>[] arr = new HashMap[toConvert.size()];
+			int index = 0;
+			for(HashMap<String, String> msg: toConvert)
+				arr[index++] = msg;
+				
+			return (HashMap<String, String>[])arr;
 		}
 		
 		public HashMap<String, String> readMessage(int id)
@@ -94,6 +104,7 @@ public class PostBoxes {
 	
 	public PostBoxes(String userOne, String userTwo)
 	{
+		postBoxes = new ArrayList<PostBox>();
 		postBoxes.add(new PostBox(userOne));
 		postBoxes.add(new PostBox(userTwo));
 	}

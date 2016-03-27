@@ -448,8 +448,9 @@ public class GameManager {
 	
 	private void deliverHumanStartingMessage(String starter, int startTeam, DicePair startDice, int moveCount) 
 	{	
-		UMS.storeInGameMessage(players, MSG.diceThrow(startDice.first(), startDice.second(), startTeam));
-		UMS.storeInGameMessage(observers.toArray(), MSG.diceThrow(startDice.first(), startDice.second(), startTeam));
+		HashMap<String, String> diceMsg = MSG.diceThrow(startDice.first(), startDice.second(), startTeam, getCurrentUserName());
+		UMS.storeInGameMessage(players, diceMsg);
+		UMS.storeInGameMessage(observers.toArray(), diceMsg);
 		
 		int[] whiteSquares = generateWhiteSquares();
 		UMS.storeInGameMessage(starter, MSG.whiteLight(whiteSquares));
@@ -462,7 +463,7 @@ public class GameManager {
 		UMS.storeInGameMessage(human, movs);
 		UMS.storeInGameMessage(observers.toArray(), movs);
 		
-		HashMap<String, String> diceVals = MSG.diceThrow(startDice.first(), startDice.second(), startTeam);
+		HashMap<String, String> diceVals = MSG.diceThrow(startDice.first(), startDice.second(), startTeam, "EASY_BOT");
 		UMS.storeInGameMessage(observers.toArray(), diceVals);
 		UMS.storeInGameMessage(human, diceVals);
 	     
@@ -508,7 +509,8 @@ public class GameManager {
 	private void deliverPostAcceptMessage(String accepter, String doubler) 
 	{
 		HashMap<String, String> accepted = MSG.playerAccepted(accepter);  
-		HashMap<String, String> diceMsg = MSG.diceThrow(getCurrentDice().first(), getCurrentDice().second(), turnOwner);
+		HashMap<String, String> diceMsg = 
+				MSG.diceThrow(getCurrentDice().first(), getCurrentDice().second(), turnOwner, getCurrentUserName());
 		
 		UMS.storeInGameMessage(players, accepted);
 		UMS.storeInGameMessage(players, diceMsg);
@@ -534,15 +536,16 @@ public class GameManager {
 		UMS.storeInGameMessage(players[0], botMovs);
 		UMS.storeInGameMessage(observers.toArray(), botMovs);
 		
-		UMS.storeInGameMessage(players[0], MSG.diceThrow(botDice.first(), botDice.second(), TEAM_BL));
-		UMS.storeInGameMessage(observers.toArray(), MSG.diceThrow(botDice.first(), botDice.second(), TEAM_BL));
+		UMS.storeInGameMessage(players[0], MSG.diceThrow(botDice.first(), botDice.second(), TEAM_BL, "EASY_BOT"));
+		UMS.storeInGameMessage(observers.toArray(), MSG.diceThrow(botDice.first(), botDice.second(),TEAM_BL ,"EASY_BOT"));
 		
 		UMS.storeInGameMessage(players[0], MSG.showButtons(canDouble(players[0])));
 	}
 	
 	private void deliverPostDiceThrowMessage(int moveCount, String thrower)
 	{
-		HashMap<String, String> diceVals = MSG.diceThrow(getCurrentDice().first(), getCurrentDice().second(), turnOwner);
+		HashMap<String, String> diceVals 
+			= MSG.diceThrow(getCurrentDice().first(), getCurrentDice().second(),turnOwner, getCurrentUserName());
 		if(moveCount == 0) UMS.storeInGameMessage(thrower, MSG.mayEndTurn());
 	
 		UMS.storeInGameMessage(players, diceVals);

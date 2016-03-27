@@ -1,5 +1,6 @@
 package project.model;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 
 import org.springframework.stereotype.Service;
@@ -12,7 +13,7 @@ public class MatchManager {
 	private StringList chatEntries;
 	private int id, whitePoints, blackPoints, addedTime, pointsToWin;
 	private boolean humanMatch, isOngoing;
-	private String[] players;
+	private  String[] players;
 	
 	public MatchManager()
 	{
@@ -115,7 +116,8 @@ public class MatchManager {
 	public void startMatch()
 	{
 		startNewGame();
-		UMS.storeInGameMessage(gameState.getSubscribers(), MSG.presentMatch("pres_match", players[0], players[1]));
+		UMS.storeInGameMessage(gameState.getSubscribers(), 
+				MSG.presentMatch(players[0], players[1], this.pointsToWin, this.addedTime));
 	}
 	
 	public void startNewGame()
@@ -139,7 +141,7 @@ public class MatchManager {
     {
     	gameState.addObserver(observer);	
    
-    	String[] chatForObserver = chatEntries.getMostRecent();
+    	ArrayList<String> chatForObserver = chatEntries.getMostRecent();
     	HashMap<String, String> chatMessages = MSG.chatBatch(chatForObserver);
     	
     	UMS.storeInGameMessage(observer, chatMessages);

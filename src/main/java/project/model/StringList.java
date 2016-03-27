@@ -31,14 +31,13 @@ public class StringList {
 		return "["+writer + "]: " + chat; 
 	}
 	
-	public String[] getMostRecent()
+	public ArrayList<String> getMostRecent()
 	{
 		if(strings.size() > 70)
 			removeOldest(50);
 		
-		return (String[])strings.toArray();
+		return strings;
 	}
-	
 	private void removeOldest(int remaining)
 	{
 		ArrayList<String> afterRemoval = new ArrayList();
@@ -59,7 +58,13 @@ public class StringList {
 	
 	public String[] toArray()
 	{
-		return (String[])strings.toArray();
+		Object[] obj = strings.toArray();
+		String[] strings = new String[obj.length];
+		int index = 0;
+		
+		for(Object o: obj)
+			strings[index++] = (String)o;
+		return strings;
 	}
 	
 	//Gert ráð fyrir að except sé í listanum? Prófum það fyrst

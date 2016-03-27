@@ -152,7 +152,7 @@ public class DataCenter
 		return trophies;
 	}
 	
-    public static String attemptLogIn(String username, String password) 
+    public static String attemptLogIn(String username, String password) throws Exception
     {
         Statement stmt = null; ResultSet rs = null;
         try {
@@ -169,7 +169,7 @@ public class DataCenter
             	return "";
             }
         }catch(Exception ignore){  
-        	return null;  }
+        	throw ignore;  }
      }
    
     public static String attemptSignUp(String username, String password) 
@@ -414,7 +414,7 @@ public class DataCenter
     private static Statement makeConnection() throws ClassNotFoundException, SQLException
     {
     	Class.forName("org.sqlite.JDBC");
-    	Connection conn = DriverManager.getConnection("jdbc:sqlite:C:\\Users\\Aðalsteinn\\workspace\\BackGammon\\base.db");
+    	Connection conn = DriverManager.getConnection("jdbc:sqlite:C:\\Users\\Aðalsteinn\\git\\BackGammon\\base.db");
         return conn.createStatement();
     }
     

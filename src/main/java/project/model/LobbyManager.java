@@ -30,7 +30,7 @@ public class LobbyManager {
 	{
 		subscribers.addStringEntry(newUser);  
 		
-		String[] recentChat = chatEntries.getMostRecent();
+		ArrayList<String> recentChat = chatEntries.getMostRecent();
 		HashMap<String, String> chatMessage = MSG.chatBatch(recentChat);
 			
 		UMS.storeLobbyMessages(newUser, lobbyLists.readMessages(WAITING));

@@ -27,13 +27,15 @@ public class MSG {
 		return msg;
 	}
 	
-	public static HashMap<String, String> presentMatch(String type, String playerOne, String playerTwo)
+	//TODO: Þessi skilaboð þurfa að vera send í Lobby storage
+	public static HashMap<String, String> presentMatch(String playerOne, String playerTwo, int points, int addedTime)
 	{
 		HashMap<String, String> msg = new HashMap<String, String>();
 		msg.put(ACT, "presentMatch");
-		msg.put("type", type);
 		msg.put("playerOne", playerOne);
 		msg.put("playerTwo", playerTwo);
+		msg.put("points", points + "");
+		msg.put("addedTime", addedTime + "");
 		return msg;
 	}
 	
@@ -95,7 +97,7 @@ public class MSG {
 		return msg;
 	}
 	
-	public static HashMap<String, String> diceThrow(int first, int second, int team)
+	public static HashMap<String, String> diceThrow(int first, int second, int team, String thrower)
 	{
 		HashMap<String, String> msg = new HashMap<String, String>();
 		msg.put(ACT, "diceThrow");
@@ -104,6 +106,7 @@ public class MSG {
 		
 		String teamStr = (team == GameManager.TEAM_WH)? "white" : "black" ;
 		msg.put("team", teamStr);
+		msg.put("thrower", thrower);
 		return msg;
 	}
 	
@@ -136,12 +139,12 @@ public class MSG {
 		return msg;
 	}
 	
-	public static HashMap<String, String> chatBatch(String[] chats)
+	public static HashMap<String, String> chatBatch(ArrayList<String> chats)
 	{
 		HashMap<String, String> msg = new HashMap<String, String>();
 		msg.put(ACT, "chatBatch");
-		for(int i = 0; i < chats.length; i++)
-			msg.put(""+i, chats[i]);
+		for(int i = 0; i < chats.size(); i++)
+			msg.put(""+i, chats.get(i));
 		
 		return msg;
 	}
@@ -189,7 +192,7 @@ public class MSG {
 		HashMap<String, String> msg = new HashMap<String, String>();
 		msg.put(ACT, "trophyEntry");
 		msg.put("id", id+"");
-		msg.put("current", current+"");
+		msg.put("percent", current+"");
 		return msg;
 	}
 	
@@ -259,7 +262,6 @@ public class MSG {
 	{
 		HashMap<String, String> msg = new HashMap<String, String>();
 		msg.put(ACT, "overallStats");
-		msg.put("pointsFor", ""+pointsFor);
 		msg.put("pointsAgainst", ""+pointsAgainst);
 		return msg;
 	}
@@ -297,8 +299,8 @@ public class MSG {
 		HashMap<String, String> msg = new HashMap<String, String>();
 		msg.put(ACT, "waitEntry");
 		msg.put("playerOne", waiter);
+		msg.put("playerTwo", "PENDING");
 		msg.put("points", points);
-		msg.put("clock", clock);
 		msg.put("addedTime", addedTime);
 		return msg;
 	}
