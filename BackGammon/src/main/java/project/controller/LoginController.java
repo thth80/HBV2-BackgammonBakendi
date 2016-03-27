@@ -28,6 +28,8 @@ public class LoginController {
 	
 	} 
 	
+	//WORK GODDAMMIT!
+	
 	@RequestMapping("/login")    
     public HashMap<String, String> logIn(HttpSession session, HttpServletResponse response,
     		@RequestParam(value="name", required=true) String username,
