@@ -7,7 +7,7 @@ public class LobbyManager {
 	
 	private static final String WAITING = "WAITING";
 	private static final String ONGOING = "ONGOING";
-	private static PostBoxes lobbyLists = new PostBoxes(WAITING, ONGOING);
+	private static PostBoxes lobbyLists = setNewPostBoxes();
 	private static StringList chatEntries = new StringList();
 	private static StringList subscribers = new StringList();
 	private static int globalId = 0;
@@ -24,6 +24,62 @@ public class LobbyManager {
 		lobbyLists.storeMessage(ONGOING, matchData);
 		UMS.storeLobbyMessage(subscribers.toArray(), matchData);
 		return id;
+	}
+	
+	//einungis í þeim tilgangi gert að prófa framendann.
+	public static PostBoxes setNewPostBoxes()
+	{
+		PostBoxes postboxes = new PostBoxes(WAITING, ONGOING);
+		HashMap<String, String> ongoing = new HashMap<String, String>();
+		ongoing.put("action", "ongoingEntry");
+		ongoing.put("playerOne", "TolfStafir12");
+		ongoing.put("playerTwo", "TolfStafir12");
+		ongoing.put("points", "5");
+		ongoing.put("addedTime", "0");
+		ongoing.put("id", "699");
+		
+		postboxes.storeMessage(ONGOING, ongoing);
+		
+		HashMap<String, String> waiting = new HashMap<String, String>();
+		waiting.put("action", "waitEntry");
+		waiting.put("playerOne", "addi");
+		waiting.put("playerTwo", "?");
+		waiting.put("points", "9");
+		waiting.put("addedTime", "45");
+		waiting.put("id", "7800");
+		
+		postboxes.storeMessage(WAITING, waiting);
+		
+		waiting = new HashMap<String, String>();
+		waiting.put("action", "waitEntry");
+		waiting.put("playerOne", "addi");
+		waiting.put("playerTwo", "?");
+		waiting.put("points", "1");
+		waiting.put("addedTime", "15");
+		waiting.put("id", "7876700");
+		
+		postboxes.storeMessage(WAITING, waiting);
+		
+		waiting = new HashMap<String, String>();
+		waiting.put("action", "waitEntry");
+		waiting.put("playerOne", "eee");
+		waiting.put("playerTwo", "?");
+		waiting.put("points", "9");
+		waiting.put("addedTime", "0");
+		waiting.put("id", "78099"); 
+		
+		postboxes.storeMessage(WAITING, waiting);
+		
+		waiting = new HashMap<String, String>();
+		waiting.put("action", "waitEntry");
+		waiting.put("playerOne", "derp");
+		waiting.put("playerTwo", "?");
+		waiting.put("points", "3");
+		waiting.put("addedTime", "0");
+		waiting.put("id", "7809229"); 
+		
+		postboxes.storeMessage(WAITING, waiting);
+		return postboxes;
 	}
 	
 	public static void subscribeUser(String newUser) 
@@ -45,14 +101,9 @@ public class LobbyManager {
 	
 	public static void playerExitingApplication(String username)
 	{
-		playerExitingMatch(username);
+		//playerExitingMatch(username);
 		subscribers.removeString(username);
 		deleteWaitEntries(username);
-	}
-	
-	public static void playerExitingMatch(String username)
-	{
-		
 	}
 	
 	public static void storeWaitListEntry(HashMap<String, String> waitData) 
@@ -66,7 +117,7 @@ public class LobbyManager {
 	//MJög skrýtin aðferð, virkar röng
 	public static void matchEnded(String[] players) 
 	{
-		int id = 5;
+		String id = "5";
 		removeOngoingMatchEntries(players);
 		UMS.storeLobbyMessage(subscribers.toArray(), MSG.deletedEntry(id));
 	}
@@ -75,7 +126,13 @@ public class LobbyManager {
 	{
 		String formatted = chatEntries.formatChatString(chat, username);
 		chatEntries.addStringEntry(formatted);
-		UMS.storeLobbyMessage(subscribers.toArray(), MSG.newChat(formatted, "lobby"));
+		UMS.storeLobbyMessage(subscribers.toArrayExcept(username), MSG.newChat(formatted, "lobby"));
+	}
+	
+	public static void updateMatchEntries(HashMap<String, String> matchEntry)
+	{
+		UMS.storeLobbyMessage(subscribers.toArray(), matchEntry);
+		lobbyLists.storeMessage(ONGOING, matchEntry);
 	}
 	
 	public static synchronized HashMap<String, String> createMatchEntryIfPossible(int waitId, String joiningPlayer)
@@ -83,9 +140,7 @@ public class LobbyManager {
 		HashMap<String, String> waitingEntryMessage = lobbyLists.readMessage(WAITING, waitId);
 		if(waitingEntryMessage != null)
 		{	
-			HashMap<String, String> newOngoing = MSG.newOngoingEntry(waitingEntryMessage, joiningPlayer);
-			UMS.storeLobbyMessage(subscribers.toArray(), newOngoing);
-			lobbyLists.storeMessage(ONGOING, newOngoing);			
+			HashMap<String, String> newOngoing = MSG.newOngoingEntry(waitingEntryMessage, joiningPlayer);			
 			return newOngoing;
 		}
 		else
@@ -95,7 +150,7 @@ public class LobbyManager {
 		}
 	}
 	
-	public static void deleteMatchEntry(int id)
+	public static void deleteMatchEntry(String id)
 	{
 		lobbyLists.removeMessage(ONGOING, id);
 		UMS.storeLobbyMessage(subscribers.toArray(), MSG.deletedEntry(id));
@@ -111,7 +166,10 @@ public class LobbyManager {
 	
 	public static void deleteSingleWaitEntry(String username, String id)
 	{
-		lobbyLists.removeMessage(username, Integer.parseInt(id));
+		lobbyLists.removeMessage(WAITING, id);
+		HashMap<String, String> deletedEntry = MSG.deletedEntry(id);
+		UMS.storeLobbyMessage(subscribers.toArrayExcept(username), deletedEntry);
+	
 	}
 	
 	public static void removeOngoingMatchEntries(String[] players)

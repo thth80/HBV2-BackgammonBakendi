@@ -23,8 +23,8 @@ public class Board {
 	private Board(boolean empty)
 	{
 		this.squares = new Square[28];
-		for(Square s: squares)
-			s = Square.createEmptySquare();
+		for(int i = 0; i < squares.length; i++)
+			squares[i] = Square.createEmptySquare();
 	}
 	public static Board createRandomBoard()
 	{
@@ -40,14 +40,14 @@ public class Board {
 	public static Board createCopy(Board original)
 	{
 		Board copy = new Board(true);
-		for(int i = 0; i< copy.squares.length; i++)
+		for(int i = 0; i < copy.squares.length; i++)
 		{
 			Square toCopyFrom = original.squares[i];
 			int team = toCopyFrom.getTeam();
-			if(team == 0)
+			if(team == TEAM_WH)
 				copy.squares[i] = Square.createWhiteSquare(toCopyFrom.count());
-			else if(team == 1)
-				copy.squares[i] = Square.createBlackSquare(toCopyFrom.count());		
+			else if(team == TEAM_BL)
+				copy.squares[i] = Square.createBlackSquare(toCopyFrom.count());	
 		}
 		
 		return copy;

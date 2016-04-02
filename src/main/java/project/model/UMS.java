@@ -5,14 +5,10 @@ import java.util.HashMap;
 public class UMS {
 	private static PostBoxes lobbyMessages = new PostBoxes();
 	private static PostBoxes gameMessages = new PostBoxes();
-	private static PostBoxes trophyMessages = new PostBoxes();
-	private static PostBoxes statsMessages = new PostBoxes();
 	private static PostBoxes generalMessages = new PostBoxes();
 	
 	public static final int LOBBY = 1;
 	public static final int MATCH = 2;
-	public static final int TROPHY = 3;
-	public static final int STATS = 4;
 	public static final int GENERAL = 5;
 	
 	private UMS() //HVAÐ MEÐ skilaboð til BOT?
@@ -30,12 +26,6 @@ public class UMS {
 			case MATCH:
 				gameMessages.addPostBox(username);
 				break;
-			case TROPHY:
-				trophyMessages.addPostBox(username);
-				break;
-			case STATS:
-				statsMessages.addPostBox(username);
-				break;
 			case GENERAL:
 				generalMessages.addPostBox(username);
 				break;
@@ -50,12 +40,6 @@ public class UMS {
 				break;
 			case MATCH:
 				gameMessages.removePostBox(username);
-				break;
-			case TROPHY:
-				trophyMessages.removePostBox(username);
-				break;
-			case STATS:
-				statsMessages.removePostBox(username);
 				break;
 			case GENERAL:
 				generalMessages.removePostBox(username);
@@ -87,24 +71,6 @@ public class UMS {
 	{
 		for(String user: userList)
 			lobbyMessages.storeMessage(user, msg);
-	}
-	
-	public static void storeTrophyMessages(String user, HashMap<String,String>[] msgs)
-	{
-		trophyMessages.storeMessages(user, msgs);
-	}
-	public static void storeTrophyMessage(String user, HashMap<String,String> msg)
-	{
-		trophyMessages.storeMessage(user, msg);
-	}
-	
-	public static void storeStatsMessages(String user, HashMap<String,String>[] msgs)
-	{
-		statsMessages.storeMessages(user, msgs);
-	}
-	public static void storeStatsMessage(String user, HashMap<String,String> msg)
-	{
-		statsMessages.storeMessage(user, msg);
 	}
 	
 	public static void storeInGameMessage(String[] userList, HashMap<String,String> msg)
@@ -141,14 +107,21 @@ public class UMS {
 		return lobbyMessages.getMessages(username);
 	}
 	
-	public static HashMap<String, String>[] retrieveTrophyMessages(String username)
+	public static HashMap<String, String>[] retrieveGeneralMessages(String username)
 	{
-		return trophyMessages.getMessages(username);
+		return generalMessages.getMessages(username);
 	}
 	
-	public static HashMap<String, String>[] retrieveStatsMessages(String username)
+	public static HashMap<String, String>[] mergeArrays(HashMap<String, String>[] first, HashMap<String, String>[] second)
 	{
-		return statsMessages.getMessages(username);
+		HashMap<String, String>[] combined = (HashMap<String, String>[]) new HashMap[first.length + second.length];
+		int index = 0;
+		for(HashMap<String, String> msg: first)
+			combined[index++] = msg;
+		
+		for(HashMap<String, String> msg: second)
+			combined[index++] = msg;
+		return combined;
 	}
 	
 	/*public static MSG[] dumpAllMessages()

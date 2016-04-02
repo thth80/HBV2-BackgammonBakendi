@@ -38,9 +38,19 @@ public class PostBoxes {
 		
 		public HashMap<String, String>[] retrieveAllMessages()
 		{
-			HashMap<String, String>[] returnMessages = (HashMap<String, String>[]) messages.toArray();
+			HashMap<String, String>[] returnMessages = toArray();
 			messages.clear();
 			return returnMessages;
+		}
+		
+		private HashMap<String, String>[] toArray()
+		{
+			HashMap<String, String>[] arr = (HashMap<String, String>[]) new HashMap[messages.size()]; 
+			int index = 0;
+			for(HashMap<String, String> msg: messages)
+				arr[index++] = msg;
+			
+			return arr;
 		}
 		
 		public HashMap<String, String>[] readAllMessages()
@@ -68,24 +78,29 @@ public class PostBoxes {
 			return null;
 		}
 		
-		public void removeMessage(int id)
+		public void removeMessage(String id)
 		{
+			HashMap<String, String> msgToRemove = null;
 			for(HashMap<String, String> msg: messages)
 			{
-				if(msg.get("id") != null && msg.get("id").equals(id+""))
+				if(msg.get("id") != null && msg.get("id").equals(id))
 				{
-					messages.remove(msg);
-				    return;
+					msgToRemove = msg;
+				    break;
 				}
 			}
+			messages.remove(msgToRemove);
 		}
 		
+		
+		//Gæti verið buggy, þá er notast við Iterator
 		public ArrayList<String> removeWaitingEntry(String waiter)
 		{	
 			ArrayList<String> removedIds = new ArrayList();
-			for(HashMap<String, String> msg: messages)
+			for(int i = messages.size()-1; i >= 0; i--)
 			{
-				if(msg.get("playerOne") != null && msg.get("playerOne").equals(waiter))
+				HashMap<String, String> msg = messages.get(i);
+				if(msg.get("playerOne").equals(waiter))
 				{
 					messages.remove(messages.indexOf(msg));
 					removedIds.add(msg.get("id"));
@@ -114,7 +129,7 @@ public class PostBoxes {
 		postBoxes.add(new PostBox(username));
 	}
 	
-	public void removeMessage(String username, int id)
+	public void removeMessage(String username, String id)
 	{
 		PostBox user = getPostBox(username);
 		user.removeMessage(id);
@@ -131,6 +146,7 @@ public class PostBoxes {
 		return user.readMessage(id);
 	}
 	
+	//TODO BANNAÐ
 	public synchronized void removePostBox(String username)
 	{
 		for(PostBox box: postBoxes)

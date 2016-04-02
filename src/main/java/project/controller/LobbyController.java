@@ -32,23 +32,34 @@ public class LobbyController {
     public HashMap<String, String>[] addWaitEntry(HttpSession session, HttpServletResponse response,
     		@RequestParam(value="name", required=true) String waiter,
     		@RequestParam(value="points", required=true) String points,
-    		@RequestParam(value="clock", required=true) String clock,
     		@RequestParam(value="addedTime", required=true) String addedTime
     		)  
     {
-    	response.addHeader("Access-Control-Allow-Origin", "*");
-    	HashMap<String, String> waitData = MSG.waitingEntryNoID(waiter, points, clock, addedTime);
+    	HashMap<String, String> waitData = MSG.waitingEntryNoID(waiter, points, addedTime);
     	LobbyManager.storeWaitListEntry(waitData);  
     	
     	return UMS.retrieveLobbyMessages(waiter);
     }
 	
+	@RequestMapping("/checkForJoin")   
+    public HashMap<String, String>[] checkForJoin(HttpSession session, HttpServletResponse response,
+    		@RequestParam(value="name", required=true) String username)  	
+    {
+    	return UMS.retrieveGeneralMessages(username);
+    }
+	
+	@RequestMapping("/refreshLobby")   
+    public HashMap<String, String>[] refreshLobby(HttpSession session, HttpServletResponse response,
+    		@RequestParam(value="name", required=true) String username)  	
+    {
+    	return UMS.mergeArrays(UMS.retrieveLobbyMessages(username), UMS.retrieveGeneralMessages(username));
+    }
+	
 	 @RequestMapping("/removeWaitEntry")   
 	    public HashMap<String, String>[] removeWaitEntry(HttpSession session, HttpServletResponse response,
 	    		@RequestParam(value="name", required=true) String username,
-	    		@RequestParam(value="id", required=true) String id)  	
+	    		@RequestParam(value="waitId", required=true) String id)  	
 	    {
-	    	response.addHeader("Access-Control-Allow-Origin", "*");
 	    	LobbyManager.deleteSingleWaitEntry(username, id);
 	    	return UMS.retrieveLobbyMessages(username);
 	    }
@@ -57,66 +68,68 @@ public class LobbyController {
     public HashMap<String, String>[] joinOfflineMatch(HttpSession session, HttpServletResponse response,
     		@RequestParam(value="name", required=true) String human,
     		@RequestParam(value="points", required=true) String points,
-    		@RequestParam(value="clock", required=true) String clock,
-    		@RequestParam(value="timeAdded", required=true) String addedTime,
+    		@RequestParam(value="addedTime", required=true) String addedTime,
     		@RequestParam(value="diff", required=true) String diff)
     {
-    	response.addHeader("Access-Control-Allow-Origin", "*");
-    	HashMap<String, String> matchData = MSG.newOngoingEntryNoID(human, points, clock, addedTime, "EASY_BOT");
+    	HashMap<String, String> matchData = MSG.newOngoingEntryNoID(human, points, addedTime, "EASY_BOT");
     	
     	int generatedMatchId = LobbyManager.createBotMatchEntry(matchData);
     	LobbyManager.deleteWaitEntries(human);
-    	MatchManager match = MatchManager.createNewBotMatch(matchData, generatedMatchId);
     	
+    	UMS.addUser(human, UMS.MATCH);
+    	MatchManager match = MatchManager.createNewBotMatch(matchData, generatedMatchId);
     	MatchController.addNewMatch(match, human , matchData.get("playerTwo"));
-    	match.startMatch();   
+    	
+    	//Hér er presentMatch sent á framenda
+    	match.startMatch(matchData.get("playerOne"), Integer.parseInt(matchData.get("addedTime")));   
     	
     	return UMS.retrieveLobbyMessages(human);
     }
     
     @RequestMapping("/joinHumanMatch")  
     public HashMap<String, String>[] joinOnlineMatch(HttpSession session, HttpServletResponse response,
-    		@RequestParam(value="id", required=true) int waitId,
-    		@RequestParam(value="name", required=true) String joiner)
-    {
-    	response.addHeader("Access-Control-Allow-Origin", "*");
-    	
+    		@RequestParam(value="matchId", required=true) int waitId,
+    		@RequestParam(value="joiner", required=true) String joiner)
+    {	
     	HashMap<String, String> matchEntry = LobbyManager.createMatchEntryIfPossible(waitId, joiner);
     	if(matchEntry != null)
     	{
+    		UMS.addUser(joiner, UMS.MATCH);
+    		UMS.addUser(matchEntry.get("playerOne"), UMS.MATCH);
     		MatchManager match = MatchManager.createNewHumanMatch(matchEntry);
+    		
     		LobbyManager.deleteWaitEntries(matchEntry.get("playerOne"));
     		LobbyManager.deleteWaitEntries(joiner);
+    		LobbyManager.updateMatchEntries(matchEntry);
     		
     		MatchController.addNewMatch(match, matchEntry.get("playerOne"), joiner);
-    		match.startMatch();
-    		//STARTA MEÐ INGAMECONTROLLER?
+    		match.startMatch(matchEntry.get("playerOne"), Integer.parseInt(matchEntry.get("addedTime")));
     	}
     	
     	return UMS.retrieveLobbyMessages(joiner);
     }
     
-    @RequestMapping("/leaveProgramFromLobby")   
-    public HashMap<String, String>[] leaveProgram(HttpSession session, HttpServletResponse response,
+    @RequestMapping("/goToTrophy")   
+    public HashMap<String, String>[] goToTrophy(HttpSession session, HttpServletResponse response,
     		@RequestParam(value="name", required=true) String username)
     {
-    	response.addHeader("Access-Control-Allow-Origin", "*");
-    		  		
-    	LobbyManager.playerExitingApplication(username);
-    	
+    	DataCenter.generateVersusStatsMessages(username);	
     	return UMS.retrieveLobbyMessages(username);
     }
     
-    //ATHATHATH : Ekki má senda OBSERVER ástand leiksins eins og það er eftir 1+ action
+    @RequestMapping("/goToStats")   
+    public HashMap<String, String>[] goToStats(HttpSession session, HttpServletResponse response,
+    		@RequestParam(value="name", required=true) String username)
+    {
+    	DataCenter.generateAllTrophyMessages(username);
+    	return UMS.retrieveLobbyMessages(username);
+    }
     
     @RequestMapping("/observeMatch")    
     public HashMap<String, String>[] observeMatch(HttpSession session, HttpServletResponse response ,
     		@RequestParam(value="name", required=true) String observer,
-    		@RequestParam(value="id", required=true) int id)
+    		@RequestParam(value="waitId", required=true) int id)
     {
-    	response.addHeader("Access-Control-Allow-Origin", "*");
-    	
-    	//Ef true þá gerist mikið í addObserver
     	boolean couldObserve = MatchController.addObserver(id, observer);
     	if(!couldObserve)
     		UMS.storeLobbyMessage(observer, MSG.explainMessage("The match was no longer running"));
@@ -127,11 +140,10 @@ public class LobbyController {
     @RequestMapping("/submitLobbyChat")   
     public HashMap<String, String>[] submitChat(HttpSession session, HttpServletResponse response, 
     		@RequestParam(value="name", required=true) String username,
-    		@RequestParam(value="chat", required=true) String chat)
+    		@RequestParam(value="chatEntry", required=true) String chat)
     {
-    	response.addHeader("Access-Control-Allow-Origin", "*");
     	LobbyManager.receiveChatEntry(username, chat);
-    	return UMS.retrieveInGameMessages(username);
+    	return UMS.retrieveLobbyMessages(username);
     }
     
 }

@@ -28,46 +28,58 @@ public class LoginController {
 	
 	} 
 	
+	@RequestMapping("/logout")    
+    public HashMap<String, String>[] logOut(HttpSession session, HttpServletResponse response,
+    		@RequestParam(value="name", required=true) String username) throws Exception
+	{
+    	UMS.removeUser(username, UMS.LOBBY);
+    	UMS.removeUser(username, UMS.GENERAL);
+    	LobbyManager.unSubscribe(username);
+		return (HashMap<String, String>[])new HashMap[0];
+    }
+	
 	@RequestMapping("/login")    
-    public HashMap<String, String> logIn(HttpSession session, HttpServletResponse response,
+    public HashMap<String, String>[] logIn(HttpSession session, HttpServletResponse response,
     		@RequestParam(value="name", required=true) String username,
     		@RequestParam(value="pw", required=true) String password) throws Exception
 	{
-		response.addHeader("Access-Control-Allow-Origin", "*");
     	String allowedUsername = null;
 		while(allowedUsername == null)
 			allowedUsername = DataCenter.attemptLogIn(username, password);
 			
     	if(allowedUsername.length() > 0){
     		UMS.addUser(username, UMS.LOBBY);
+    		UMS.addUser(username, UMS.GENERAL);
+    		UMS.storeLobbyMessage(username, MSG.welcomeUser(username));
         	LobbyManager.subscribeUser(username);
-    	
-    		return MSG.welcomeUser(username);
+    		
+        	return UMS.retrieveLobbyMessages(username);
     	}
     	else
-    		return MSG.explainMessage("There was no matching username found");	
+    		return (HashMap<String,String>[]) new HashMap[]{MSG.explainMessage("There was no matching username found")};	
     }
     
     @RequestMapping("/signup")  
-    public HashMap<String, String> signUp(HttpSession session, HttpServletResponse response,
+    public HashMap<String, String>[] signUp(HttpSession session, HttpServletResponse response,
     		@RequestParam(value="name", required=true) String username,
     		@RequestParam(value="pw", required=true) String password) throws Exception
     {
-    	response.addHeader("Access-Control-Allow-Origin", "*");
     	String allowedUsername = null;
     	while(allowedUsername == null)
 			allowedUsername = DataCenter.attemptSignUp(username, password);
 			
     	if(allowedUsername.length() > 0){
     		UMS.addUser(username, UMS.LOBBY);
+    		UMS.addUser(username, UMS.GENERAL);
+    		UMS.storeLobbyMessage(username, MSG.welcomeUser(username));
         	LobbyManager.subscribeUser(username);
     		
     		while(!DataCenter.createNewUserTrophyEntries(username));
     		while(!DataCenter.createNewUserVersusEntries(username));  
     		
-    		return MSG.welcomeUser(username);
+    		return UMS.retrieveLobbyMessages(username);
     	}
     	else
-    		return MSG.explainMessage("Username is already in use");
+    		return (HashMap<String,String>[]) new HashMap[]{MSG.explainMessage("Username is already in use")};
     }
 }

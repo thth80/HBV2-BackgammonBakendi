@@ -13,7 +13,6 @@ public class DataCenter
 		private int target;
 		
 		public TrophyRow(int id, int target, String query) 
-		//einungis kallað þegar forrit er ræst á server
 		{																
 			this.target = target;
 			this.id = id;
@@ -196,7 +195,7 @@ public class DataCenter
     
     public static boolean generateVersusStatsMessages(String username) 
     {																		
-    	Statement stmt = null; ResultSet rs = null; int overallWins = -1; int overallLosses = -1;
+    	Statement stmt = null; ResultSet rs = null; int userPoi = -1; int oppoPoi = -1; int userPaw = -1; int oppoPaw = -1;
     	String getAllPlayed = "SELECT * FROM GameVersus WHERE (userOne = '"+username+"' OR userTwo = '"+username+"' ) AND userOnePoints+userTwoPoints > 0";
     	try 
     	{
@@ -209,12 +208,17 @@ public class DataCenter
             			rs.getInt("userTwoPoints"), rs.getInt("pawnsSavedOne"), rs.getInt("pawnsSavedTwo")));
             	
             rs = stmt.executeQuery(DataCenter.generateOverallWinsAndLosses(username));
-            overallWins = rs.getInt(1);
-            overallLosses = rs.getInt(2);
-            closeAll(stmt.getConnection(), stmt, rs);
+            userPoi = rs.getInt(1);
+            oppoPoi = rs.getInt(2);
+            userPaw = rs.getInt(3);
+            oppoPaw = rs.getInt(4);
             
-            UMS.storeStatsMessages(username, (HashMap<String, String>[])versusStats.toArray());
-            UMS.storeStatsMessage(username, MSG.newOverallEntry(overallWins, overallLosses));
+            closeAll(stmt.getConnection(), stmt, rs);
+           
+            UMS.storeLobbyMessage(username, MSG.newVersusEntry(username, username, "Overall", 
+            		userPoi, oppoPoi, userPaw, oppoPaw));
+            UMS.storeLobbyMessages(username, (HashMap<String, String>[])versusStats.toArray());
+           
             return true;
 
         }catch(Exception ignore){  
@@ -235,7 +239,7 @@ public class DataCenter
             }
             closeAll(stmt.getConnection(), stmt, rs);
             
-            UMS.storeTrophyMessages(username, (HashMap<String, String>[])trophies.toArray());
+            UMS.storeLobbyMessages(username, (HashMap<String, String>[])trophies.toArray());
             return true;
         }
     	catch(Exception ignore){  
@@ -365,9 +369,9 @@ public class DataCenter
     
     private static String generateOverallWinsAndLosses(String username)
     {
-    		return "SELECT winp.sum, lossp.sum FROM" +
-				   "(SELECT SUM(points) as sum FROM GameResults WHERE winner = '"+username+"' ) as winp, " +
-			       "(SELECT SUM(points) as sum FROM GameResults WHERE loser = '"+username+"' ) as lossp ";
+    	return "SELECT winp.sum, lossp.sum, winp.pawns, lossp.pawns FROM" +
+			   "(SELECT SUM(points) as sum, SUM(15-winPawns) as pawns FROM GameResults WHERE winner = '"+username+"' ) as winp, " +
+		       "(SELECT SUM(points) as sum, SUM(15-winPawns) as pawns FROM GameResults WHERE loser = '"+username+"' ) as lossp ";
     }
     
     //erum með update statement ready, sækum row.sql í þær raðir með completed = 0, username = 'username' aka notFinishedTrophies 

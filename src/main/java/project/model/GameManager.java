@@ -38,7 +38,7 @@ public class GameManager {
 		turnOwner = TEAM_NONE;
 	}
 	
-	public static GameManager cloneGame(GameManager game)  
+	public static GameManager resetGameBoard(GameManager game)  
 	{
 		GameManager clone = new GameManager(game.players[0], game.players[1]);
 		clone.observers = game.observers;
@@ -305,9 +305,9 @@ public class GameManager {
 	
 	public void reverseMovesMadeThisTurn(Board copy)
 	{
-		for(Move move: this.movesMade)
-			if(move != null)
-				performReverseMovement(move, copy);
+		for(int i = movesMade.length - 1; i >= 0; i--)
+			if(movesMade[i] != null)
+				performReverseMovement(movesMade[i], copy);
 	}
 	
 	public Board getBoardCopy()
@@ -435,7 +435,7 @@ public class GameManager {
 	{
 		int[] diceVals = new int[]{whiteDice.first(), whiteDice.second(), blackDice.first(), blackDice.second()};
 		int[] counts = new int[28]; int[] teams = new int[28];
-		for(int pos = 0; pos < 28; pos++)
+		for(int pos = 0; pos < counts.length; pos++)
 		{
 			Square sq = copyBoard.getSquare(pos);
 			counts[pos] = sq.count();

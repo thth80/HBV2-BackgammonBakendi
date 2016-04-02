@@ -19,14 +19,6 @@ public class MSG {
 		return msg;
 	}
 	
-	public static HashMap<String, String> addedTime(int addedTime) 
-	{									
-		HashMap<String, String> msg = new HashMap<String, String>();
-		msg.put(ACT, "addedTime");
-		msg.put("seconds", addedTime+"");
-		return msg;
-	}
-	
 	//TODO: Þessi skilaboð þurfa að vera send í Lobby storage
 	public static HashMap<String, String> presentMatch(String playerOne, String playerTwo, int points, int addedTime)
 	{
@@ -78,11 +70,11 @@ public class MSG {
 		return msg;
 	}
 	
-	public static HashMap<String, String> deletedEntry(int id)
+	public static HashMap<String, String> deletedEntry(String id)
 	{
 		HashMap<String, String> msg = new HashMap<String, String>();
 		msg.put(ACT, "deletedEntry");
-		msg.put("id", id+"");
+		msg.put("id", id);
 		return msg;
 	}
 	
@@ -196,23 +188,13 @@ public class MSG {
 		return msg;
 	}
 	
-	public static HashMap<String, String> newOngoingEntry(int id, HashMap<String, String> map)
-	{
-		HashMap<String, String> msg = new HashMap<String, String>();
-		msg.put(ACT, "ongoingEntry");
-		msg.put("id", id+"");
-		
-		return msg;
-	}
-	
-	public static HashMap<String, String> newOngoingEntryNoID(String human, String points, String clock, String addedTime,
+	public static HashMap<String, String> newOngoingEntryNoID(String human, String points, String addedTime,
 													String bot)
 	{
 		HashMap<String, String> msg = new HashMap<String, String>();
 		msg.put(ACT, "ongoingEntry");
 		msg.put("playerOne", human);
 		msg.put("points", points);
-		msg.put("clock", clock);
 		msg.put("addedTime", addedTime);
 		msg.put("playerTwo", bot);
 		
@@ -223,11 +205,14 @@ public class MSG {
 	{
 		HashMap<String, String> updatedMsg = new HashMap<String, String>();
 		updatedMsg.put(ACT, "ongoingEntry");
+		updatedMsg.put("playerTwo", joiningPlayer);
+		
+		waitingEntry.remove(ACT);
+		waitingEntry.remove("playerTwo");
 		
 		for (HashMap.Entry<String, String> entry : waitingEntry.entrySet())
 		    updatedMsg.put(entry.getKey(), entry.getValue());
-		
-		updatedMsg.put("playerTwo", joiningPlayer);
+	
 		return updatedMsg;
 	}
 	
@@ -255,14 +240,6 @@ public class MSG {
 		msg.put("decider", decider);
 		msg.put("stakes", newStakes+"");
 
-		return msg;
-	}
-	
-	public static HashMap<String, String> newOverallEntry(int pointsFor, int pointsAgainst)
-	{
-		HashMap<String, String> msg = new HashMap<String, String>();
-		msg.put(ACT, "overallStats");
-		msg.put("pointsAgainst", ""+pointsAgainst);
 		return msg;
 	}
 	
@@ -294,12 +271,12 @@ public class MSG {
 	}
 	
 	//Er sent til notenda með ID
-	public static HashMap<String, String> waitingEntryNoID(String waiter, String points, String clock, String addedTime )
+	public static HashMap<String, String> waitingEntryNoID(String waiter, String points, String addedTime )
 	{
 		HashMap<String, String> msg = new HashMap<String, String>();
 		msg.put(ACT, "waitEntry");
 		msg.put("playerOne", waiter);
-		msg.put("playerTwo", "PENDING");
+		msg.put("playerTwo", "?");
 		msg.put("points", points);
 		msg.put("addedTime", addedTime);
 		return msg;

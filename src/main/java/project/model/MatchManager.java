@@ -11,7 +11,7 @@ public class MatchManager {
 	
 	private GameManager gameState;
 	private StringList chatEntries;
-	private int id, whitePoints, blackPoints, addedTime, pointsToWin;
+	private int id, whitePoints, blackPoints, pointsToWin;
 	private boolean humanMatch, isOngoing;
 	private  String[] players;
 	
@@ -20,6 +20,7 @@ public class MatchManager {
 		
 	}
 	
+	//TODO Bæta við UMS.addUser(match)
 	private MatchManager(String playerWhite, String playerBlack, int id)
 	{
 		players = new String[]{playerWhite, playerBlack};
@@ -30,6 +31,8 @@ public class MatchManager {
 		whitePoints = blackPoints = 0;
 		this.id = id;
 		isOngoing = true;
+		
+		//UMS.addUser(username, type);
 	}
 	
 	public static MatchManager createNewHumanMatch(HashMap<String,String> matchData)
@@ -39,7 +42,6 @@ public class MatchManager {
 		MatchManager match = new MatchManager(whitePlayer, blackPlayer, Integer.parseInt(matchData.get("id")));
 		match.gameState = GameManager.regularGame(whitePlayer, blackPlayer);
 		
-		match.addedTime = (matchData.get("clock").equals("true"))? Integer.parseInt(matchData.get("addedTime")): NO_CLOCK ;
 		match.humanMatch = true;
 		match.pointsToWin = Integer.parseInt(matchData.get("points"));
 		
@@ -49,13 +51,12 @@ public class MatchManager {
 	public static MatchManager createNewBotMatch(HashMap<String, String> matchData, int id)
 	{	
 		String botName = "EASY_BOT";
-		if(matchData.get("difficulty").equals("medium")) botName = "MED_BOT";
-		else if(matchData.get("difficulty").equals("hard")) botName = "HARD_BOT";
+		/*if(matchData.get("difficulty").equals("medium")) botName = "MED_BOT";
+		else if(matchData.get("difficulty").equals("hard")) botName = "HARD_BOT"; */
 		
 		MatchManager match = new MatchManager(matchData.get("playerOne"), botName, id);
 		
 		match.gameState = GameManager.regularGame(matchData.get("playerOne"), botName);
-		match.addedTime = (matchData.get("clock").equals("true"))? Integer.parseInt(matchData.get("addedTime")): NO_CLOCK ;
 		match.humanMatch = false;
 		match.pointsToWin = Integer.parseInt(matchData.get("points"));
 		
@@ -83,7 +84,7 @@ public class MatchManager {
 	}
 	
 	//LEIKUR GETUR EKKI KLÁRAST HÉR AÐ NEÐAN **NEMA** BOT VINNI
-	public void onTurnFinish()		
+	public void onEndTurn()		
 	{
 		String turnFinisher = gameState.getCurrentUserName();
 		if(humanMatch)
@@ -91,20 +92,13 @@ public class MatchManager {
 		else
 			gameState.userEndedTurnInBotGame(); 
 			
-			
 		if(!gameState.hasGameEnded()) 
-		{
-			if(addedTime != NO_CLOCK)
-				UMS.storeInGameMessage(turnFinisher, MSG.addedTime(addedTime));
 			return;
-		}
 		
 		handleEndOfCurrentGame(turnFinisher, false);
-		gameState = GameManager.cloneGame(gameState); 
+		gameState = GameManager.resetGameBoard(gameState); 
 			
-		if(!hasMatchEnded())
-			startNewGame();
-		else
+		if(hasMatchEnded())
 		{
 			storeMatchResults(getBlackPlayer(), getWhitePlayer(), blackPoints, whitePoints);
 			closeMatch();
@@ -113,15 +107,18 @@ public class MatchManager {
 		}
 	}
 	
-	public void startMatch()
+	public void startMatch(String playerOne, int addedTime)
 	{
-		startNewGame();
+		startNewGame(playerOne);
 		UMS.storeInGameMessage(gameState.getSubscribers(), 
-				MSG.presentMatch(players[0], players[1], this.pointsToWin, this.addedTime));
+				MSG.presentMatch(players[0], players[1], this.pointsToWin, addedTime));
 	}
 	
-	public void startNewGame()
+	public void startNewGame(String user)
 	{
+		if(!user.equals(getWhitePlayer()))
+			return;
+		
 		int startingTeam = gameState.makeOpeningThrow();
 		
 		if(!humanMatch && startingTeam == GameManager.TEAM_BL) 
@@ -155,11 +152,6 @@ public class MatchManager {
 	{
 		return whitePoints >= pointsToWin || blackPoints >= pointsToWin;
 	}
-
-	public int getTimeAddition()
-	{
-		return this.addedTime;
-	}
 	
 	public void beginNewRound()
 	{
@@ -183,11 +175,6 @@ public class MatchManager {
 	public String getOtherPlayer(String name)
 	{
 		return gameState.getOtherUserName(name);
-	}
-	
-	public void initNewGame()
-	{
-		gameState = GameManager.cloneGame(gameState);
 	}
 	
 	private void storeGameResults(HashMap<String, Integer> results, String winner, String loser, int winPoints)

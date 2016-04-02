@@ -60,20 +60,26 @@ public class MatchController {
     	return UMS.retrieveInGameMessages(username);
     }
 	
+	@RequestMapping("/accept")   
+    public HashMap<String, String>[] accept(HttpSession session,
+    		@RequestParam(value="name", required=true) String accepter)
+    {
+    	(getMatch(accepter)).onDoublingAccept();
+    	return UMS.retrieveInGameMessages(accepter);
+    }
+	
 	@RequestMapping("/reject")   
     public HashMap<String, String>[] reject(HttpSession session,
     		@RequestParam(value="name", required=true) String rejecter)
     {
 		MatchManager currMatch = getMatch(rejecter);
     	currMatch.handleEndOfCurrentGame(rejecter, true);
-    	currMatch.initNewGame();
+    
     	if(currMatch.hasMatchEnded())
     	{
     		currMatch.finishMatchNormally(rejecter);
     		currMatch.closeMatch();
     	}
-    	else
-    		currMatch.startNewGame();
     	
     	return UMS.retrieveInGameMessages(rejecter);
     }
@@ -83,8 +89,6 @@ public class MatchController {
     		@RequestParam(value="name", required=true) String player)
     {
 		MatchManager currMatch = getMatch(player);
-		UMS.storeInGameMessage(player, MSG.addedTime(currMatch.getTimeAddition()));
-		//Framendi þarf að skilja að þessi skilaboð slökkva á tökkum/white/green reitum
 		
 		currMatch.deliverMadeMoves();
     	currMatch.beginNewRound();
@@ -96,7 +100,6 @@ public class MatchController {
     public HashMap<String, String>[] throwDice(HttpSession session, HttpServletResponse response,
     		@RequestParam(value="name", required=true) String username)
     {
-    	response.addHeader("Access-Control-Allow-Origin", "*");
     	(getMatch(username)).onDiceThrow();
     	return UMS.retrieveInGameMessages(username);
     }
@@ -106,9 +109,7 @@ public class MatchController {
     public HashMap<String, String>[] square(HttpSession session, HttpServletResponse response,
     		@RequestParam(value="pos", required=true) int pos,
     		@RequestParam(value="name", required=true) String mover)
-    {
-    	response.addHeader("Access-Control-Allow-Origin", "*");
-    	
+    {	
     	MatchManager currMatch = getMatch(mover);
     	currMatch.onGreenSquareClick(pos);
     	if(currMatch.hasGameEnded())
@@ -116,81 +117,91 @@ public class MatchController {
     		String loser = currMatch.getOtherPlayer(mover);
     		currMatch.deliverMadeMoves();
     		currMatch.handleEndOfCurrentGame(loser, false);
-    		currMatch.initNewGame();
     		
     		if(currMatch.hasMatchEnded())
     		{
     			currMatch.finishMatchNormally(loser);
     			currMatch.closeMatch();
     		}
-    		else
-    			currMatch.startNewGame();
     	}
     	return UMS.retrieveInGameMessages(mover);
     }
+    
+    @RequestMapping("/startNewGame")   
+    public HashMap<String, String>[] startNewGame(HttpSession session,
+    		@RequestParam(value="name", required=true) String username)
+    {
+    	(getMatch(username)).startNewGame(username);
+    	return UMS.retrieveInGameMessages(username);
+    }
+    
+    
+    @RequestMapping("/observerLeaving")   		
+    public HashMap<String, String>[] observerLeavingMatch(HttpSession session , HttpServletResponse response,
+    		@RequestParam(value="name", required=true) String leavingObserver)
+    {
+    	UMS.removeUser(leavingObserver, UMS.MATCH);
+    	return (HashMap<String, String>[]) new HashMap[0];
+    }
+   
 	
-	@RequestMapping("/playerLeavingMatch")   		
-    public HashMap<String, String>[] leaveMatch(HttpSession session , HttpServletResponse response,
+	@RequestMapping("/playerLeaving")   		
+    public HashMap<String, String>[] playerLeavingMatch(HttpSession session , HttpServletResponse response,
     		@RequestParam(value="name", required=true) String leavingPlayer)
     {
-    	response.addHeader("Access-Control-Allow-Origin", "*");
-    	
-    	//Það þarf að tékka hvort match sé þegar lokið
+    	UMS.removeUser(leavingPlayer, UMS.MATCH);
     	
     	MatchManager currMatch = getMatch(leavingPlayer);
     	currMatch.handleEndOfCurrentGame(leavingPlayer, true);
     	currMatch.handleLeavingPlayerEndingMatch(leavingPlayer);
     	currMatch.closeMatch();
-    	//currMatch.gameState.removePlayerAsSubscriber(quitter);
     	
 		ongoingMatches.removeMatch(leavingPlayer);
 		int matchId = currMatch.getId();
 		
 		if(getMatch(matchId) == null)
-			LobbyManager.deleteMatchEntry(matchId);
+			LobbyManager.deleteMatchEntry(matchId+ "");
     	
-    	return UMS.retrieveInGameMessages(leavingPlayer);
+    	return (HashMap<String, String>[]) new HashMap[0];
     }
 	
-	@RequestMapping("/accept")   
-    public String accept(HttpSession session,
-    		@RequestParam(value="name", required=true) String accepter)
+	@RequestMapping("/refreshMatch")   
+    public HashMap<String, String>[] refreshMatch(HttpSession session,
+    		@RequestParam(value="name", required=true) String username)
     {
-    	(getMatch(accepter)).onDoublingAccept();
-    	return "derp";
+    	return UMS.retrieveInGameMessages(username);
     }
+	
+	
 	
     @RequestMapping("/endTurn")   
     public HashMap<String, String>[] doneMoving(HttpSession session ,HttpServletResponse response,
     		@RequestParam(value="name", required=true) String username)
     {
-    	response.addHeader("Access-Control-Allow-Origin", "*");
     	MatchManager currMatch = getMatch(username);
-    	currMatch.onTurnFinish();;
+    	currMatch.onEndTurn();
     	
     	if(currMatch.hasGameEnded())
     	{
     		currMatch.handleEndOfCurrentGame(username, false);
-    		currMatch.initNewGame();
     		if(currMatch.hasMatchEnded())
     		{
     			currMatch.finishMatchNormally(username);
     			currMatch.closeMatch();
     		}
-    		else
-    			currMatch.startNewGame();
     	}
-    	//höfum samband við OLM ef það skal breyta status á leik
+    	
+    	//höfum samband við LM ef það skal breyta status á leik
     		
     	return UMS.retrieveInGameMessages(username);
     }
     
     @RequestMapping("/cube")   
-    public String flipCube(HttpSession session,
+    public HashMap<String, String>[] flipCube(HttpSession session,
     		@RequestParam(value="name", required=true) String doubler)
     {
-    	(getMatch(doubler)).onDiceThrow(); //handleCubeFlip
-    	return "derp";
+    	(getMatch(doubler)).onCubeFlip(); 
+    	return UMS.retrieveInGameMessages(doubler);
     }
     
     private static MatchManager getMatch(int id)
