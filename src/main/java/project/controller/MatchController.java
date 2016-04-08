@@ -68,30 +68,29 @@ public class MatchController {
     	return UMS.retrieveInGameMessages(accepter);
     }
 	
+	
+	/*
+	 * Senda gameOver skilaboð  X
+	 * Refresha Game Board   	X
+	 * Senda matchOver ef Match búinn á alla  X  
+	 */
 	@RequestMapping("/reject")   
     public HashMap<String, String>[] reject(HttpSession session,
     		@RequestParam(value="name", required=true) String rejecter)
     {
 		MatchManager currMatch = getMatch(rejecter);
-    	currMatch.handleEndOfCurrentGame(rejecter, true);
-    
-    	if(currMatch.hasMatchEnded())
-    	{
-    		currMatch.finishMatchNormally(rejecter);
-    		currMatch.closeMatch();
-    	}
+		currMatch.onPlayerRejecting(rejecter);
     	
     	return UMS.retrieveInGameMessages(rejecter);
     }
 	
-	@RequestMapping("/outOfTime")   
+	@RequestMapping("/timeOut")   
     public HashMap<String, String>[] outOfTime(HttpSession session,
     		@RequestParam(value="name", required=true) String player)
     {
 		MatchManager currMatch = getMatch(player);
 		
-		currMatch.deliverMadeMoves();
-    	currMatch.beginNewRound();
+		currMatch.onEndTurn();
     	
     	return UMS.retrieveInGameMessages(player);
     }
@@ -105,25 +104,23 @@ public class MatchController {
     }
     
 
+	/*
+	 * BLOKKA Hvíta reiti á framenda X
+	 * Blokkva End Turn á framenda X
+	 * Senda einungis rétt move X
+	 * Refresha Game Board   X
+	 * Senda gameOver ef leikur búinn  X
+	 * Senda matchOver skilaboð á rétta staði X
+	 */
     @RequestMapping("/greenSquare") 
     public HashMap<String, String>[] square(HttpSession session, HttpServletResponse response,
-    		@RequestParam(value="pos", required=true) int pos,
+    		@RequestParam(value="from", required=true) int fromSquare,
+    		@RequestParam(value="to", required=true) int toSquare,
     		@RequestParam(value="name", required=true) String mover)
     {	
     	MatchManager currMatch = getMatch(mover);
-    	currMatch.onGreenSquareClick(pos);
-    	if(currMatch.hasGameEnded())
-    	{
-    		String loser = currMatch.getOtherPlayer(mover);
-    		currMatch.deliverMadeMoves();
-    		currMatch.handleEndOfCurrentGame(loser, false);
-    		
-    		if(currMatch.hasMatchEnded())
-    		{
-    			currMatch.finishMatchNormally(loser);
-    			currMatch.closeMatch();
-    		}
-    	}
+    	currMatch.onGreenSquareClick(fromSquare, toSquare ,mover);
+    	
     	return UMS.retrieveInGameMessages(mover);
     }
     
@@ -144,7 +141,12 @@ public class MatchController {
     	return (HashMap<String, String>[]) new HashMap[0];
     }
    
-	
+    /*
+	 * BLOKKA TAKKANA á framenda 
+	 * Senda gameOver skilaboð X
+	 * Senda matchOver skilaboð á rétta staði X
+	 * Vona að framendinn slökkvi á inputs áður en ýtt er á input
+	 */
 	@RequestMapping("/playerLeaving")   		
     public HashMap<String, String>[] playerLeavingMatch(HttpSession session , HttpServletResponse response,
     		@RequestParam(value="name", required=true) String leavingPlayer)
@@ -154,13 +156,10 @@ public class MatchController {
     	MatchManager currMatch = getMatch(leavingPlayer);
     	currMatch.handleEndOfCurrentGame(leavingPlayer, true);
     	currMatch.handleLeavingPlayerEndingMatch(leavingPlayer);
-    	currMatch.closeMatch();
     	
 		ongoingMatches.removeMatch(leavingPlayer);
-		int matchId = currMatch.getId();
-		
-		if(getMatch(matchId) == null)
-			LobbyManager.deleteMatchEntry(matchId+ "");
+	
+		LobbyManager.deleteMatchEntry(currMatch.getId()+ "");
     	
     	return (HashMap<String, String>[]) new HashMap[0];
     }
@@ -173,23 +172,12 @@ public class MatchController {
     }
 	
 	
-	
     @RequestMapping("/endTurn")   
     public HashMap<String, String>[] doneMoving(HttpSession session ,HttpServletResponse response,
     		@RequestParam(value="name", required=true) String username)
     {
     	MatchManager currMatch = getMatch(username);
     	currMatch.onEndTurn();
-    	
-    	if(currMatch.hasGameEnded())
-    	{
-    		currMatch.handleEndOfCurrentGame(username, false);
-    		if(currMatch.hasMatchEnded())
-    		{
-    			currMatch.finishMatchNormally(username);
-    			currMatch.closeMatch();
-    		}
-    	}
     	
     	//höfum samband við LM ef það skal breyta status á leik
     		

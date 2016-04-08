@@ -18,7 +18,11 @@ public class Move {
 	
 	public static Move getMoveIfForward(int from, int to, int team)
 	{
-		if(team == 0)
+		if(to >= 26) 
+			return new Move(from, to, team);
+		else if(from >= 26) 
+			return null;
+		else if(team == 0)
 			return (to < from)? new Move(from, to, team): null ;
 		else
 			return (to > from)? new Move(from, to, team) : null ;

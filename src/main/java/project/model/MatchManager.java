@@ -20,7 +20,6 @@ public class MatchManager {
 		
 	}
 	
-	//TODO Bæta við UMS.addUser(match)
 	private MatchManager(String playerWhite, String playerBlack, int id)
 	{
 		players = new String[]{playerWhite, playerBlack};
@@ -32,7 +31,6 @@ public class MatchManager {
 		this.id = id;
 		isOngoing = true;
 		
-		//UMS.addUser(username, type);
 	}
 	
 	public static MatchManager createNewHumanMatch(HashMap<String,String> matchData)
@@ -63,9 +61,28 @@ public class MatchManager {
 		return match;
 	}
 	
-	public void onGreenSquareClick(int squarePos) 
+	public void onGreenSquareClick(int fromSquare, int toSquare, String mover) 
 	{
-		gameState.greenSquareClicked(squarePos);
+		gameState.greenSquareClicked(fromSquare, toSquare);
+		if(hasGameEnded())
+    	{
+    		String loser = getOtherPlayer(mover);
+    		deliverMadeMoves();
+    		handleEndOfCurrentGame(loser, false);
+    		gameState = GameManager.resetGameBoard(gameState);
+    		
+    		if(hasMatchEnded())
+    			finishMatchNormally(loser);
+    	}
+	}
+	
+	public void onPlayerRejecting(String rejecter)
+	{
+		handleEndOfCurrentGame(rejecter, true);
+		gameState = GameManager.resetGameBoard(gameState);
+		
+		if(hasMatchEnded())
+    		finishMatchNormally(rejecter);
 	}
 	
 	public void onDiceThrow()
@@ -81,9 +98,16 @@ public class MatchManager {
 	public void onDoublingAccept()
 	{
 		gameState.doublingAccepted();
-	}
+	}	
 	
-	//LEIKUR GETUR EKKI KLÁRAST HÉR AÐ NEÐAN **NEMA** BOT VINNI
+	/*
+	 * EF bot vann leik:
+	 * BLOKKA TAKKANA X
+	 * Senda gameOver skilaboð X
+	 * Refresha leikborðið X
+	 * Ef match over: 
+	 * 	Senda matchOver skilaboð X
+	 */
 	public void onEndTurn()		
 	{
 		String turnFinisher = gameState.getCurrentUserName();
@@ -101,7 +125,6 @@ public class MatchManager {
 		if(hasMatchEnded())
 		{
 			storeMatchResults(getBlackPlayer(), getWhitePlayer(), blackPoints, whitePoints);
-			closeMatch();
 			UMS.storeInGameMessage(gameState.getSubscribers(),
 					MSG.matchOver(getBlackPlayer(), getWhitePlayer(), blackPoints, whitePoints )); 
 		}
@@ -110,7 +133,7 @@ public class MatchManager {
 	public void startMatch(String playerOne, int addedTime)
 	{
 		startNewGame(playerOne);
-		UMS.storeInGameMessage(gameState.getSubscribers(), 
+		UMS.storeLobbyMessage(gameState.getSubscribers(), 
 				MSG.presentMatch(players[0], players[1], this.pointsToWin, addedTime));
 	}
 	
@@ -163,7 +186,7 @@ public class MatchManager {
 		String winner = gameState.getOtherUserName(loser);
 		
 		HashMap<String, Integer> results = gameState.getEndGameResults(winner);
-		int pointsToWinner = (!forfeitedGame)? results.get("cubeValue")*results.get("multiplier") :results.get("cubeValue");
+		int pointsToWinner = (forfeitedGame)? results.get("cubeValue"): results.get("cubeValue")*results.get("multiplier");
 		updateMatchScore(results.get("winner"), pointsToWinner);
 		storeGameResults(results, winner, loser, pointsToWinner);
 		
@@ -209,11 +232,6 @@ public class MatchManager {
 		
 		UMS.storeInGameMessage(gameState.getSubscribers(),
 				MSG.matchOver(winner, leaver, winPoints, lossPoints));
-	}
-	
-	public void closeMatch()
-	{
-		isOngoing = false;
 	}
 	
 	private int getPoints(String playerName)

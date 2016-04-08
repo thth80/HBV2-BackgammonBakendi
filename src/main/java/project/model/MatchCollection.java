@@ -48,7 +48,12 @@ public class MatchCollection {
 	
 	public void removeMatch(String username)
 	{
-		allMatches.remove(allMatches.indexOf(username));
+		for(int i = allMatches.size() - 1; i >= 0; i--)
+			if(allMatches.get(i).username.equals(username))
+			{
+				allMatches.remove(i);
+				return;
+			}
 	}
 	
 }

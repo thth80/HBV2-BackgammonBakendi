@@ -10,7 +10,7 @@ public class GameManager {
 	private DicePair whiteDice, blackDice;
 	private Move[] movesMade; 
 	private String[] players;
-	private int pivotSquare, turnOwner, cube, lastDoubler;
+	private int  turnOwner, cube, lastDoubler;
 	private StringList observers;
 
 	private GameManager(String p1, String p2) 
@@ -21,7 +21,7 @@ public class GameManager {
 		whiteDice = new DicePair();
 		blackDice = new DicePair();
 		movesMade = null;
-		pivotSquare = NONE_CHOSEN;
+		
 		turnOwner = TEAM_NONE;
 		lastDoubler = TEAM_NONE;
 		cube = 1;
@@ -92,24 +92,30 @@ public class GameManager {
 		deliverBotStartingMessage(getCurrentUserName(), TEAM_BL, startingDice, movs);
 	}
 
-	public void greenSquareClicked(int toSquare) 
+	public void greenSquareClicked(int fromSquare, int toSquare) 
 	{
-		Move forwardMove = Move.getMoveIfForward(pivotSquare, toSquare, turnOwner);
+		Move forwardMove = Move.getMoveIfForward(fromSquare, toSquare, turnOwner);
 		if(forwardMove != null)
 		{
 			performForwardMovement(forwardMove, toSquare);
-			deliverInTurnMoveMessage(prepareInTurnForwardMove(forwardMove));
 		}
 		else
 		{
-			Move reverseMove = this.removeReverseMove(toSquare);
+			//VIrkar ekki fyrir end zones
+			Move reverseMove = this.removeMove(fromSquare, toSquare);
 			performReverseMovement(reverseMove, this.board);
 			getCurrentDice().markAsUnused(calculateRealMovement(reverseMove.from, reverseMove.to));
-			deliverInTurnMoveMessage(prepareInTurnReverseMove(reverseMove));
 		}
 		
-		//Þarf að senda nýjan skammt af from/white reitum til framenda
-		pivotSquare = NONE_CHOSEN;
+		UMS.storeInGameMessage(getCurrentUserName(), generateAllHighlighting());
+		if(movesLeft() == 0 && !hasGameEnded()) UMS.storeInGameMessage(getCurrentUserName(), MSG.mayEndTurn());
+	}
+	
+	private int calculateRealMovement(int from, int to)
+	{
+		if(to == WHITE_END_ZONE) to = 0;
+		else if(to == BLACK_END_ZONE) to = 25;
+		return Math.abs(to - from);
 	}
 	
 	private void performForwardMovement(Move forwardMove, int toSquare)
@@ -126,35 +132,44 @@ public class GameManager {
 		boardToChange.reverseMovement(reverseMove);
 	}
 	
-	private int[] generateWhiteSquares()
+	private Move removeMove(int fromSquare, int toSquare)
+	{
+		for(int i = 0; i < movesMade.length; i++)
+			if(movesMade[i] != null && movesMade[i].to == fromSquare && movesMade[i].from == toSquare)
+			{
+				Move move = movesMade[i];
+				movesMade[i] = null;
+				return move;
+			}
+		return null;
+	}
+	
+
+	
+	private HashMap<String, String> generateAllHighlighting()
 	{
 		ArrayList<Integer> allWhites = new ArrayList();
+		ArrayList<ArrayList<Integer>> greenList = new ArrayList();
+		
 		int[] unusedValues = getCurrentDice().getUnusedValues();
+		
 		for(int i = 0; i < 28; i++)
 		{
-			boolean possFor = getPossibleForwardDestinations(i, unusedValues, allWhites);
-			boolean possBack = getPossibleReverseDestinations(i, allWhites);
-			if(possFor || possBack)
+			ArrayList<Integer> possible = getPossibleForwardDestinations(i, unusedValues);
+			getPossibleReverseDestinations(i, possible);
+			if(possible.size() > 0)
+			{
 				allWhites.add(i);
+				greenList.add(possible);
+			}
 		}
 		
-		return toIntArray(allWhites);
+		return MSG.allHighlights(allWhites, greenList);
 	}
 	
-	public void whiteSquareClicked(int fromSquare)
-	{
-		pivotSquare = fromSquare;
-		ArrayList<Integer> allPossible = new ArrayList();
-		getPossibleForwardDestinations(pivotSquare, getCurrentDice().getUnusedValues(), allPossible);
-		getPossibleReverseDestinations(pivotSquare, allPossible);
-		
-		int[] toGreenLight = toIntArray(allPossible);
-		UMS.storeInGameMessage(getCurrentUserName(), MSG.greenLight(toGreenLight));
-	}
-	
-	private boolean getPossibleForwardDestinations(int fromPos, int[] diceValsRemaining, ArrayList<Integer> possible)
+	private ArrayList<Integer> getPossibleForwardDestinations(int fromPos, int[] diceValsRemaining)
 	{	
-		boolean foundPossible = false;
+		ArrayList<Integer> possible = new ArrayList<Integer>();
 		for(int i = 0; i < diceValsRemaining.length; i++)
 		{
 			int destination = (turnOwner == TEAM_WH)? fromPos - diceValsRemaining[i] :fromPos + diceValsRemaining[i] ;
@@ -164,29 +179,17 @@ public class GameManager {
 				if(destination >= 1 && destination <= 24) possible.add(destination);
 				else if(destination > 24) 				  possible.add(BLACK_END_ZONE);
 				else if(destination < 1) 				  possible.add(WHITE_END_ZONE);
-				foundPossible = true;
 			}
 		}
-		return foundPossible;
+		return possible;
 	}
 	
-	private boolean getPossibleReverseDestinations(int fromPos, ArrayList<Integer> possible)
-	{
-		//þessi move geta falið í sér ólögleg(<0 eða >25) gildi, þarf að leiðrétta?
-		boolean foundPossible = false;
+	private void getPossibleReverseDestinations(int fromPos, ArrayList<Integer> possible)
+	{	
 		Move[] backMoves = getPossibleBackMoves(fromPos);
 		for(Move backMove: backMoves)
-		{
 			possible.add(backMove.from);
-			foundPossible = true;
-		}
-		return foundPossible;
-	}
 	
-	//Hér þarf að WHITE LIGHT-a
-	public void pivotSquareClicked()
-	{
-		pivotSquare = NONE_CHOSEN;
 	}
 	
 	public void setObservers(StringList obs)
@@ -213,6 +216,7 @@ public class GameManager {
 	
 	public void userEndedTurnInBotGame()
 	{		
+		this.onlyIncludeValidMoves();
 		getCurrentDice().markAllAsUnused();
 		Move[] copiedMoves = this.movesMade;
 		
@@ -256,8 +260,8 @@ public class GameManager {
 		results.put("winner", winnerNum);
 		results.put("loserSteps", board.countRemainingSteps(loserNum));
 		results.put("winnerSteps", board.countRemainingSteps(winnerNum));
-		results.put("loserPawns", getTeamNumberFromName(getOtherUserName(winner)));
-		results.put("winnerPawns", getTeamNumberFromName(getOtherUserName(winner)));
+		results.put("loserPawns", board.countRemainingPawns(loserNum));
+		results.put("winnerPawns", board.countRemainingPawns(winnerNum));
 		results.put("cubeValue", this.cube);
 		results.put("multiplier", board.getMultiplier(loserNum));
 
@@ -267,6 +271,7 @@ public class GameManager {
 	public void doublingCubeWasFlipped()
 	{
 		deliverDoublingOfferMessage(this.getCurrentUserName(), this.getOtherUserName());
+		this.lastDoubler = this.getTeamNumberFromName(getCurrentUserName());
 	}
 
 	public void doublingAccepted()
@@ -275,6 +280,8 @@ public class GameManager {
 		getCurrentDice().rollDice();
 		int moveCount = (CalculationCenter.randomLegalMoves(board, getCurrentDice(), turnOwner)).length;
 		movesMade = new Move[moveCount];
+		
+		if(moveCount == 0)UMS.storeInGameMessage(getCurrentUserName(), MSG.mayEndTurn());
 		deliverPostAcceptMessage(getOtherUserName(), getCurrentUserName());
 	}
 	
@@ -318,8 +325,7 @@ public class GameManager {
 	public void beginNewRound()
 	{
 		switchTurn();
-		this.movesMade = null;
-		pivotSquare = NONE_CHOSEN;
+		this.movesMade = new Move[0];
 	}
 	
 	private int movesLeft() 
@@ -352,12 +358,15 @@ public class GameManager {
 	{
 		int counter = 0;
 		for(int i = 0; i < movesMade.length; i++)
-			if(movesMade[i] != null && movesMade[i].to == squarePos) counter++;
+			if(movesMade[i] != null && movesMade[i].to == squarePos && board.containsTeam(squarePos, turnOwner))
+				counter++;
 
 		Move[] moves = new Move[counter];
 		int index = 0;
+		
 		for(int i = 0; i < movesMade.length; i++)
-			if(movesMade[i] != null && movesMade[i].to == squarePos) moves[index++] = movesMade[i];
+			if(movesMade[i] != null && movesMade[i].to == squarePos && board.containsTeam(squarePos, turnOwner)) 
+				moves[index++] = movesMade[i];
 
 		return moves;
 	}
@@ -372,59 +381,8 @@ public class GameManager {
 			}
 	}
 	
-	private HashMap<String, String> prepareInTurnReverseMove(Move move) 
-	{													   	
-		ArrayList<Integer> froms = new ArrayList();
-		ArrayList<Integer> tos = new ArrayList();
-		ArrayList<Boolean> killMoves = new ArrayList();
-		
-		froms.add(move.to);
-		tos.add(move.from);
-		killMoves.add(false);
-		if(!move.killed) 
-			return MSG.inTurnMove((Integer[])froms.toArray(),(Integer[]) tos.toArray(),(Boolean[]) killMoves.toArray());
-		
-		int deadzone = (move.team == TEAM_WH)? 0 : 25 ;
-		froms.add(deadzone);
-		tos.add(move.to);
-		killMoves.add(false); 
-		return MSG.inTurnMove((Integer[])froms.toArray(),(Integer[]) tos.toArray(),(Boolean[]) killMoves.toArray());
-	}
-	
-	private HashMap<String, String> prepareInTurnForwardMove(Move move) 
-	{												
-		ArrayList<Integer> froms = new ArrayList();
-		ArrayList<Integer> tos = new ArrayList();
-		ArrayList<Boolean> killMoves = new ArrayList();
-		
-		froms.add(move.from);
-		tos.add(move.to);
-		killMoves.add(move.killed);
-		
-		if(!move.killed) 
-			return MSG.inTurnMove((Integer[])froms.toArray(),(Integer[]) tos.toArray(),(Boolean[]) killMoves.toArray());
-		
-		int deadZone = (move.team == TEAM_WH)? 0 : 25 ;
-		froms.add(move.to);
-		tos.add(deadZone);
-		killMoves.add(false); 
-		return MSG.inTurnMove((Integer[])froms.toArray(),(Integer[]) tos.toArray(),(Boolean[]) killMoves.toArray());
-	}
-
-	private int calculateRealMovement(int from, int to)
-	{
-		if(to == WHITE_END_ZONE) to = 0;
-		else if(to == BLACK_END_ZONE) to = 25;
-		return Math.abs(to - from);
-	}
 	
 	//************ Delivery adferdir her ad nedan ***************************
-	
-	private void deliverInTurnMoveMessage(HashMap<String, String> moves)
-	{
-		if(movesLeft() == 0) UMS.storeInGameMessage(getCurrentUserName(), MSG.mayEndTurn());
-		UMS.storeInGameMessage(getCurrentUserName(), moves);
-	}
 	
 	public void deliverEndMovesToOthers()
 	{
@@ -452,8 +410,7 @@ public class GameManager {
 		UMS.storeInGameMessage(players, diceMsg);
 		UMS.storeInGameMessage(observers.toArray(), diceMsg);
 		
-		int[] whiteSquares = generateWhiteSquares();
-		UMS.storeInGameMessage(starter, MSG.whiteLight(whiteSquares));
+		UMS.storeInGameMessage(starter, generateAllHighlighting());
 	}
 	
 	private void deliverBotStartingMessage(String human, int startTeam, DicePair startDice, Move[] moves)
@@ -503,7 +460,7 @@ public class GameManager {
 				killMoves.add(false);
 			}
 		}
-		return MSG.animateMessage((Integer[])froms.toArray(), (Integer[])tos.toArray(), (Boolean[])killMoves.toArray());
+		return MSG.animateMessage(froms, tos, killMoves);
 	}
 	
 	private void deliverPostAcceptMessage(String accepter, String doubler) 
@@ -517,7 +474,7 @@ public class GameManager {
 		UMS.storeInGameMessage(observers.toArray(), accepted);
 		UMS.storeInGameMessage(observers.toArray(), diceMsg);
 		
-		UMS.storeInGameMessage(doubler, MSG.whiteLight(generateWhiteSquares()));
+		UMS.storeInGameMessage(doubler, generateAllHighlighting());
 	}
 	
 	private void deliverDoublingOfferMessage(String doubler, String decider)
@@ -538,8 +495,8 @@ public class GameManager {
 		
 		UMS.storeInGameMessage(players[0], MSG.diceThrow(botDice.first(), botDice.second(), TEAM_BL, "EASY_BOT"));
 		UMS.storeInGameMessage(observers.toArray(), MSG.diceThrow(botDice.first(), botDice.second(),TEAM_BL ,"EASY_BOT"));
-		
-		UMS.storeInGameMessage(players[0], MSG.showButtons(canDouble(players[0])));
+		if(!hasGameEnded())
+			UMS.storeInGameMessage(players[0], MSG.showButtons(canDouble(players[0])));
 	}
 	
 	private void deliverPostDiceThrowMessage(int moveCount, String thrower)
@@ -551,7 +508,7 @@ public class GameManager {
 		UMS.storeInGameMessage(players, diceVals);
 		UMS.storeInGameMessage(observers.toArray(), diceVals);
 		
-		UMS.storeInGameMessage(thrower, MSG.whiteLight(generateWhiteSquares()));
+		UMS.storeInGameMessage(thrower, generateAllHighlighting());
 	}
 	
 	private boolean isTurnHuman()
@@ -593,17 +550,7 @@ public class GameManager {
 		return combined;
 	}
 	
-	private Move removeReverseMove(int toSquare)
-	{
-		for(int i = 0; i < movesMade.length; i++)
-			if(movesMade[i] != null && movesMade[i].to == pivotSquare && movesMade[i].from == toSquare)
-			{
-				Move move = movesMade[i];
-				movesMade[i] = null;
-				return move;
-			}
-		return null;
-	}
+	
 	
 	public String[] getSubscribers()
 	{

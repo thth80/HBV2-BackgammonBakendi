@@ -6,15 +6,16 @@ import java.util.HashMap;
 public class MSG {
 	private static final String ACT = "action";
 	
-	public static HashMap<String, String> animateMessage(Integer[] froms, Integer[] tos, Boolean[] killMoves)
+	public static HashMap<String, String> animateMessage(ArrayList<Integer> froms, 
+			ArrayList<Integer> tos, ArrayList<Boolean> killMoves)
 	{
 		HashMap<String, String> msg = new HashMap<String, String>();
 		msg.put(ACT, "animate");
-		for(int i = 0; i < froms.length; i++)
+		for(int i = 0; i < froms.size(); i++)
 		{
-			msg.put("from"+ i, froms[i]+"");
-			msg.put("to" + i, tos[i]+"");
-			msg.put("kill"+ i, Boolean.toString(killMoves[i]));
+			msg.put("from" + i, froms.get(i) + "");
+			msg.put("to" + i, tos.get(i) + "");
+			msg.put("kill" + i, Boolean.toString( killMoves.get(i) ));
 		}
 		return msg;
 	}
@@ -96,8 +97,7 @@ public class MSG {
 		msg.put("firstDice", first+"");
 		msg.put("secondDice", second+"");
 		
-		String teamStr = (team == GameManager.TEAM_WH)? "white" : "black" ;
-		msg.put("team", teamStr);
+		msg.put("team", team + "");
 		msg.put("thrower", thrower);
 		return msg;
 	}
@@ -115,19 +115,6 @@ public class MSG {
 	{									
 		HashMap<String, String> msg = new HashMap<String, String>();
 		msg.put(ACT, "mayEndTurn");
-		return msg;
-	}
-	
-	public static HashMap<String, String> inTurnMove(Integer[] froms, Integer[] tos, Boolean[] killMoves)
-	{
-		HashMap<String, String> msg = new HashMap<String, String>();
-		msg.put(ACT, "inTurnMove");
-		for(int i = 0; i < froms.length; i++)
-		{
-			msg.put("from" + i, froms[i] + "");
-			msg.put("to" + i, tos[i] + "");
-			msg.put("kill" + i, Boolean.toString(killMoves[i]));
-		}
 		return msg;
 	}
 	
@@ -151,24 +138,29 @@ public class MSG {
 		return msg;
 	}
 	
-	public static HashMap<String, String> greenLight(int[] positions)
+	public static HashMap<String, String> allHighlights(ArrayList<Integer> whites, ArrayList<ArrayList<Integer>> greenList)
 	{
 		HashMap<String, String> msg = new HashMap<String, String>();
-		msg.put(ACT, "greenLighted");
-		for(int i = 0; i < positions.length; i++)
-			msg.put(""+i, positions[i]+"");
+		msg.put(ACT, "allHighlights");
+		
+		for(int i = 0; i < whites.size(); i++)
+		{
+			String white = whites.get(i)+"";
+			ArrayList<Integer> greens = greenList.get(i);
+			String greenStr = createGreenString(greens);
+			msg.put(white, greenStr);
+		}
 		
 		return msg;
 	}
 	
-	public static HashMap<String, String> whiteLight(int[] positions)
+	private static String createGreenString(ArrayList<Integer> greens)
 	{
-		HashMap<String, String> msg = new HashMap<String, String>();
-		msg.put(ACT, "whiteLighted");
-		for(int i = 0; i < positions.length; i++)
-			msg.put(""+i, positions[i]+"");
+		String green = greens.get(0)+"";
+		for(int i = 1; i < greens.size(); i++)
+			green = green + "_" + greens.get(i);
 		
-		return msg;
+		return green;
 	}
 	
 	public static HashMap<String, String> showButtons(boolean canDouble)

@@ -112,8 +112,8 @@ public class LobbyController {
     @RequestMapping("/goToTrophy")   
     public HashMap<String, String>[] goToTrophy(HttpSession session, HttpServletResponse response,
     		@RequestParam(value="name", required=true) String username)
-    {
-    	DataCenter.generateVersusStatsMessages(username);	
+    {	
+    	DataCenter.generateAllTrophyMessages(username);
     	return UMS.retrieveLobbyMessages(username);
     }
     
@@ -121,7 +121,7 @@ public class LobbyController {
     public HashMap<String, String>[] goToStats(HttpSession session, HttpServletResponse response,
     		@RequestParam(value="name", required=true) String username)
     {
-    	DataCenter.generateAllTrophyMessages(username);
+    	DataCenter.generateVersusStatsMessages(username);
     	return UMS.retrieveLobbyMessages(username);
     }
     

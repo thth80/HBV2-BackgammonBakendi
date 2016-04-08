@@ -46,11 +46,10 @@ public class DicePair {
 				if(!usageStatuses[i]){ usageStatuses[i] = true; break; }
 			}
 		}
-		else
-			if(d1 == value) 	 usageStatuses[0] = true;
-			else if(d2 == value) usageStatuses[1] = true;
-			else if(d1 > value)  usageStatuses[0] = true;
-			else if(d2 > value)	 usageStatuses[1] = true;
+		else if(d1 == value) 	 usageStatuses[0] = true;
+		else if(d2 == value) usageStatuses[1] = true;
+		else if(d1 > value)  usageStatuses[0] = true;
+		else if(d2 > value)	 usageStatuses[1] = true;
 	}
 	
 	public void markAllAsUnused()
@@ -62,12 +61,16 @@ public class DicePair {
 	public void markAsUnused(int value)
 	{
 		if(isPaired())
+		{
 			for(int i = 0; i < usageStatuses.length; i++)
+			{
 				if(usageStatuses[i])
 				{ 
 					usageStatuses[i] = false; 
 					break; 
 				}
+			}
+		}
 		else if(d1 == value) 	usageStatuses[0] = false;
 		else if(d2 == value)usageStatuses[1] = false;
 		else if(d1 > value) usageStatuses[0] = false;
@@ -98,14 +101,14 @@ public class DicePair {
 
 	public void rollDice()
 	{
-		//this.d1 = 1 + (int)(Math.random()*6);
-		//this.d2 = 1 + (int)(Math.random()*6);
-		if(Math.random()> 0.4)
+		this.d1 = 1 + (int)(Math.random()*6);
+		this.d2 = 1 + (int)(Math.random()*6);
+		/*if(Math.random()> 0.4)
 			this.d1 = this.d2 = 6;
 		else if(Math.random() > 0.7)
 			this.d1 = this.d2 = 5;
 		else
-			this.d1 = this.d2 = 4;	
+			this.d1 = this.d2 = 4;	*/
 	}
 
 	public boolean isPaired()

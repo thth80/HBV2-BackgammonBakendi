@@ -80,7 +80,7 @@ public class DataCenter
 	
 	private static String createUpdateStatement(TrophyRow row, String sqlSelect, String username)
 	{
-		return "UPDATE Trophies SET current = ( "+sqlSelect+" ) WHERE username = ''"+username+"'' AND name = ''"+row.id+"'' ";
+		return "UPDATE Trophies SET current = ( "+sqlSelect+" ) WHERE username = ''"+username+"'' AND id = ''"+row.id+"'' ";
 	}
 	
     private static String replaceQuestionMarks(String trophyQuery, String username)
@@ -217,13 +217,23 @@ public class DataCenter
            
             UMS.storeLobbyMessage(username, MSG.newVersusEntry(username, username, "Overall", 
             		userPoi, oppoPoi, userPaw, oppoPaw));
-            UMS.storeLobbyMessages(username, (HashMap<String, String>[])versusStats.toArray());
+            UMS.storeLobbyMessages(username, toArray(versusStats));
            
             return true;
 
         }catch(Exception ignore){  
         	return false;  }
     }
+    
+    private static HashMap<String, String>[] toArray(ArrayList<HashMap<String, String>> messages)
+	{
+		HashMap<String, String>[] arr = (HashMap<String, String>[]) new HashMap[messages.size()]; 
+		int index = 0;
+		for(HashMap<String, String> msg: messages)
+			arr[index++] = msg;
+		
+		return arr;
+	}
     
     public static boolean generateAllTrophyMessages(String username)
     {
@@ -239,7 +249,7 @@ public class DataCenter
             }
             closeAll(stmt.getConnection(), stmt, rs);
             
-            UMS.storeLobbyMessages(username, (HashMap<String, String>[])trophies.toArray());
+            UMS.storeLobbyMessages(username, toArray(trophies));
             return true;
         }
     	catch(Exception ignore){  
